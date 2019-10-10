@@ -1,3 +1,2 @@
 #!/bin/bash
-screen -d -m -S jupyter bash -c "source activate infutor && cd /home/ubuntu && /home/ubuntu/anaconda3/bin/jupyter notebook --no-browser --NotebookApp.token=''"
-
+screen -d -m -S jupyter bash -c "cd ~ && /home/ubuntu/anaconda3/envs/infutor/bin/python -m jupyter notebook --no-browser --allow-root --NotebookApp.token=''"
