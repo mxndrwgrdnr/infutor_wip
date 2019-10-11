@@ -62,7 +62,8 @@ out_cols = [
     'pid', 'from_addrid', 'to_addrid', 'from_effdate', 'to_effdate',
     'from_county', 'to_county', 'seq']
 demog_cols = [
-    'PID', 'AGE', 'LOR', 'HOMEOWNERCD', 'EHI', 'PCTB', 'PCTW', 'PCTA', 'PCTH']
+    'PID', 'AGE', 'LOR', 'HOMEOWNERCD', 'DWELLTYPE', 'EHI', 'MEDSCHL', 'MHV',
+    'PCTOCCW', 'PCTOCCB', 'PCTB', 'PCTW', 'PCTA', 'PCTH']
 demog_dtypes = {
     col: float if col in ['AGE', 'LOR'] else str for col in demog_cols}
 
@@ -250,3 +251,23 @@ if __name__ == '__main__':
                 100 * num_moves_w_demog / num_total_moves, 1))))
 
     moves_w_demog.to_csv('../data/movers.csv')
+
+    # generate county-level flow counts
+    movers = pd.read_csv(
+        '../data/movers.csv',
+        dtype={'PROP_FIPSCD_from': str, 'PROP_FIPSCD_to': str}, index_col=0
+    )
+    movers.index.name = 'pid'
+    movers.reset_index(inplace=True)
+    uniq_fips = list(set(list(
+        movers['PROP_FIPSCD_from'].unique()) +
+        list(movers['PROP_FIPSCD_to'].unique())))
+    movers = movers[
+        (movers['to_effdate'] > 201112) & (movers['to_effdate'] < 201701)]
+    grouped = movers[['pid', 'PROP_FIPSCD_from', 'PROP_FIPSCD_to']].groupby(
+        ['PROP_FIPSCD_from', 'PROP_FIPSCD_to'])
+    flow_counts = grouped.count().reset_index()
+    flow_counts.rename(columns={'pid': 'count'}, inplace=True)
+    total_infutor_movers = flow_counts['count'].sum()
+    flow_counts['pct_flow'] = flow_counts['count'] / total_infutor_movers
+    flow_counts.to_csv('../data/flow_counts.csv', index=False)
