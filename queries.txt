@@ -1,0 +1,108 @@
+# wide to long
+WITH `project.dataset.yourtable` AS (
+  SELECT PID,
+--   EFFDATE1, EFFDATE2, EFFDATE3, EFFDATE4, EFFDATE5, EFFDATE6, EFFDATE7, EFFDATE8, EFFDATE9, EFFDATE10
+--   ADDRID1, ADDRID2, ADDRID3, ADDRID4, ADDRID5, ADDRID6, ADDRID7, ADDRID8, ADDRID9, ADDRID10
+  FIPSCD1, FIPSCD2, FIPSCD3, FIPSCD4, FIPSCD5, FIPSCD6, FIPSCD7, FIPSCD8, FIPSCD9, FIPSCD10
+  from `infutor.crd4_ca`
+)
+SELECT PID,
+  fipscd_seq, fipscd
+FROM (
+  SELECT PID, 
+    REGEXP_REPLACE(SPLIT(pair, ':')[OFFSET(0)], r'^"|"$', '') fipscd_seq, 
+    REGEXP_REPLACE(SPLIT(pair, ':')[OFFSET(1)], r'^"|"$', '') fipscd 
+  FROM `project.dataset.yourtable` t, 
+  UNNEST(SPLIT(REGEXP_REPLACE(to_json_string(t), r'{|}', ''))) pair
+)
+WHERE NOT LOWER(fipscd_seq) IN ('pid')
+order by PID, fipscd_seq
+
+# merge long on seq
+select a.*, f.PID as pid_f, f.fipscd_seq, f.fipscd, f.seq as seq_f
+from `infutor.crd4_ca_long_addrid_effdate` as a
+inner join `infutor.crd4_ca_long_fipscd` as f
+on a.pid_a = f.PID and a.seq_a = f.seq
+order by pid_a, seq_a
+
+# long to wide
+SELECT
+    pid_a,
+    MAX(CASE WHEN chron_order = 1 THEN fipscd END) AS county_seq_1,
+    MAX(CASE WHEN chron_order = 1 THEN addrid END) AS addrid_seq_1,
+    MAX(CASE WHEN chron_order = 1 THEN effdate END) AS effdate_seq_1,
+    MAX(CASE WHEN chron_order = 2 THEN fipscd END) AS county_seq_2,
+    MAX(CASE WHEN chron_order = 2 THEN addrid END) AS addrid_seq_2,
+    MAX(CASE WHEN chron_order = 2 THEN effdate END) AS effdate_seq_2,
+    MAX(CASE WHEN chron_order = 3 THEN fipscd END) AS county_seq_3,
+    MAX(CASE WHEN chron_order = 3 THEN addrid END) AS addrid_seq_3,
+    MAX(CASE WHEN chron_order = 3 THEN effdate END) AS effdate_seq_3,
+    MAX(CASE WHEN chron_order = 4 THEN fipscd END) AS county_seq_4,
+    MAX(CASE WHEN chron_order = 4 THEN addrid END) AS addrid_seq_4,
+    MAX(CASE WHEN chron_order = 4 THEN effdate END) AS effdate_seq_4,
+    MAX(CASE WHEN chron_order = 5 THEN fipscd END) AS county_seq_5,
+    MAX(CASE WHEN chron_order = 5 THEN addrid END) AS addrid_seq_5,
+    MAX(CASE WHEN chron_order = 5 THEN effdate END) AS effdate_seq_5,
+    MAX(CASE WHEN chron_order = 6 THEN fipscd END) AS county_seq_6,
+    MAX(CASE WHEN chron_order = 6 THEN addrid END) AS addrid_seq_6,
+    MAX(CASE WHEN chron_order = 6 THEN effdate END) AS effdate_seq_6,
+    MAX(CASE WHEN chron_order = 7 THEN fipscd END) AS county_seq_7,
+    MAX(CASE WHEN chron_order = 7 THEN addrid END) AS addrid_seq_7,
+    MAX(CASE WHEN chron_order = 7 THEN effdate END) AS effdate_seq_7,
+    MAX(CASE WHEN chron_order = 8 THEN fipscd END) AS county_seq_8,
+    MAX(CASE WHEN chron_order = 8 THEN addrid END) AS addrid_seq_8,
+    MAX(CASE WHEN chron_order = 8 THEN effdate END) AS effdate_seq_8,
+    MAX(CASE WHEN chron_order = 9 THEN fipscd END) AS county_seq_9,
+    MAX(CASE WHEN chron_order = 9 THEN addrid END) AS addrid_seq_9,
+    MAX(CASE WHEN chron_order = 9 THEN effdate END) AS effdate_seq_9,
+    MAX(CASE WHEN chron_order = 10 THEN fipscd END) AS county_seq_10,
+    MAX(CASE WHEN chron_order = 10 THEN addrid END) AS addrid_seq_10,
+    MAX(CASE WHEN chron_order = 10 THEN effdate END) AS effdate_seq_10
+FROM infutor.crd4_ca_long_chron_order
+GROUP BY pid_a;
+
+# intraregional relocations
+select * from `infutor.crd4_ca_wide_chron_order` 
+where (county_seq_1 in ('001', '013', '041', '055', '075', '081', '085', '095', '097')
+and county_seq_2 in ('001', '013', '041', '055', '075', '081', '085', '095', '097'))
+or (county_seq_2 in ('001', '013', '041', '055', '075', '081', '085', '095', '097')
+and county_seq_3 in ('001', '013', '041', '055', '075', '081', '085', '095', '097'))
+or (county_seq_3 in ('001', '013', '041', '055', '075', '081', '085', '095', '097')
+and county_seq_4 in ('001', '013', '041', '055', '075', '081', '085', '095', '097'))
+or (county_seq_4 in ('001', '013', '041', '055', '075', '081', '085', '095', '097')
+and county_seq_5 in ('001', '013', '041', '055', '075', '081', '085', '095', '097'))
+or (county_seq_5 in ('001', '013', '041', '055', '075', '081', '085', '095', '097')
+and county_seq_6 in ('001', '013', '041', '055', '075', '081', '085', '095', '097'))
+or (county_seq_6 in ('001', '013', '041', '055', '075', '081', '085', '095', '097')
+and county_seq_7 in ('001', '013', '041', '055', '075', '081', '085', '095', '097'))
+or (county_seq_7 in ('001', '013', '041', '055', '075', '081', '085', '095', '097')
+and county_seq_8 in ('001', '013', '041', '055', '075', '081', '085', '095', '097'))
+or (county_seq_8 in ('001', '013', '041', '055', '075', '081', '085', '095', '097')
+and county_seq_9 in ('001', '013', '041', '055', '075', '081', '085', '095', '097'))
+or (county_seq_9 in ('001', '013', '041', '055', '075', '081', '085', '095', '097')
+and county_seq_10 in ('001', '013', '041', '055', '075', '081', '085', '095', '097'));
+
+# order by eff date
+select *, ROW_NUMBER() OVER(PARTITION BY pid_a order by effdate) as chron_order
+from `infutor.crd4_ca_long_merged`
+order by pid_a, chron_order;
+
+# extract sequence
+update `infutor.crd4_ca_long_addrid`  
+set seq = SAFE_CAST(REGEXP_EXTRACT(addrid_seq, r'[0-9]{1,2}$') as int64)
+where true;
+
+# effdate ranking
+SELECT *, ROW_NUMBER() OVER(PARTITION BY poo) #ROW_NUMBER() OVER() AS num
+FROM UNNEST(['foo', 'foo','bar', 'baz', 'qux', 'corge', 'garply', 'waldo', 'fred']) as poo
+order by poo
+
+# bayarea properties
+SELECT * FROM `numeric-water-231118.infutor.property_ca` where CNTY in ('001', '013', '041', '055', '075', '081', '085', '095', '097');
+
+# all addressess and effective dates
+SELECT 
+EFFDATE, EFFDATE2, EFFDATE3, EFFDATE4, EFFDATE5, EFFDATE6, EFFDATE7, EFFDATE8, EFFDATE9, EFFDATE10,
+ADDRID, ADDRID2, ADDRID3, ADDRID4, ADDRID5, ADDRID6, ADDRID7, ADDRID8, ADDRID9, ADDRID10
+from `infutor.crd4_ca`
+limit 10;
